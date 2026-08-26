@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Rakhi | Create • Personalize • Share</title>
+    <meta name="description" content="Digital Rakhi lets brothers and sisters create, personalize, and share digital Rakhis — by hand or with AI — no matter where they are.">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- ============================= -->
+    <!-- LEFT VERTICAL SIDEBAR -->
+    <!-- ============================= -->
+    <nav id="sidebar" class="sidebar" aria-label="Main navigation">
+
+        <div id="sidebar-brand" class="sidebar-brand">
+            <img id="sidebar-logo" class="sidebar-logo" src="assets/images/logo.png" alt="Digital Rakhi logo">
+            <div class="sidebar-brand-text">
+                <span id="brand-name" class="brand-name">Digital Rakhi</span>
+                <span id="brand-subtitle" class="brand-subtitle">Create • Personalize • Share</span>
+            </div>
+        </div>
+
+        <ul id="sidebar-nav-list" class="sidebar-nav-list" role="list">
+            <li class="sidebar-nav-item-wrapper">
+                <button type="button" id="nav-home" class="nav-item active-nav-item" data-page="home" aria-current="page">
+                    <span class="nav-icon" aria-hidden="true">🏠</span>
+                    <span class="nav-label">Home</span>
+                </button>
+            </li>
+            <li class="sidebar-nav-item-wrapper">
+                <button type="button" id="nav-create" class="nav-item" data-page="create">
+                    <span class="nav-icon" aria-hidden="true">🎨</span>
+                    <span class="nav-label">Create Rakhi</span>
+                </button>
+            </li>
+            <li class="sidebar-nav-item-wrapper">
+                <button type="button" id="nav-ai-studio" class="nav-item" data-page="ai-studio">
+                    <span class="nav-icon" aria-hidden="true">✨</span>
+                    <span class="nav-label">AI Studio</span>
+                </button>
+            </li>
+            <li class="sidebar-nav-item-wrapper">
+                <button type="button" id="nav-my-designs" class="nav-item" data-page="my-designs">
+                    <span class="nav-icon" aria-hidden="true">💖</span>
+                    <span class="nav-label">My Designs</span>
+                </button>
+            </li>
+            <li class="sidebar-nav-item-wrapper">
+                <button type="button" id="nav-share" class="nav-item" data-page="share">
+                    <span class="nav-icon" aria-hidden="true">💌</span>
+                    <span class="nav-label">Share</span>
+                </button>
+            </li>
+        </ul>
+
+        <div id="sidebar-footer" class="sidebar-footer">
+            <p id="sidebar-footer-message">Made for every brother &amp; sister ❤️</p>
+        </div>
+    </nav>
+
+    <!-- ============================= -->
+    <!-- RAKHI TRANSITION / LOADING OVERLAY -->
+    <!-- ============================= -->
+    <div id="rakhi-transition" class="rakhi-transition" role="status" aria-live="polite" aria-hidden="true" hidden>
+        <div id="rakhi-transition-content" class="rakhi-transition-content">
+            <img id="transition-rakhi" class="transition-rakhi-image" src="assets/images/rakhi-transition.png" alt="Animated Rakhi thread tying">
+            <p id="transition-message" class="transition-message">Tying your digital Rakhi...</p>
+            <p id="transition-subtext" class="transition-subtext">With love ❤️</p>
+        </div>
+    </div>
+
+    <!-- ============================= -->
+    <!-- MAIN CONTENT AREA -->
+    <!-- ============================= -->
+    <main id="main-content" class="main-content">
+
+        <!-- ============================= -->
+        <!-- HOME SECTION -->
+        <!-- ============================= -->
+        <section id="page-home" class="page-section active-page" data-page-id="home" aria-labelledby="home-heading">
+            <div id="home-hero" class="hero">
+                <div id="home-hero-text" class="hero-text">
+                    <h1 id="home-heading" class="hero-heading-image-wrapper">
+                        <img id="home-heading-image" class="hero-heading-image" src="assets/images/hero-heading.png" alt="Create Your Own Rakhi">
+                    </h1>
+                    <p id="home-hero-subtext" class="hero-subtext">Design something special for your sibling.</p>
+                    <p id="home-hero-description" class="hero-description">
+                        Digital Rakhi is created for all brothers and sisters. Whether you are together or
+                        far apart, create something personal that represents your bond.
+                    </p>
+
+                    <div id="home-hero-actions" class="hero-actions">
+                        <button type="button" id="start-designing-btn" class="btn btn-primary">
+                            🎨 Start Designing
+                        </button>
+                        <button type="button" id="ai-create-btn" class="btn btn-secondary">
+                            ✨ Create with AI
+                        </button>
+                    </div>
+                </div>
+
+                <div id="home-hero-visual" class="hero-visual">
+                    <img id="hero-rakhi-image" src="assets/images/hero-rakhi.png" alt="A beautifully decorated sample Rakhi thread">
+                </div>
+            </div>
+
+            <!-- HOW IT WORKS SECTION -->
+            <section id="how-it-works" class="how-it-works" aria-labelledby="how-it-works-heading">
+                <h2 id="how-it-works-heading">How It Works</h2>
+                <div id="how-it-works-cards" class="feature-card-grid">
+                    <article id="step-design" class="feature-card" data-step="1">
+                        <span class="feature-card-icon" aria-hidden="true">🎨</span>
+                        <h3 class="feature-card-title">Design</h3>
+                        <p class="feature-card-text">Create your Rakhi from scratch or customize a template.</p>
+                    </article>
+                    <article id="step-personalize" class="feature-card" data-step="2">
+                        <span class="feature-card-icon" aria-hidden="true">🤖</span>
+                        <h3 class="feature-card-title">Personalize</h3>
+                        <p class="feature-card-text">Use AI to generate unique designs and heartfelt messages.</p>
+                    </article>
+                    <article id="step-share" class="feature-card" data-step="3">
+                        <span class="feature-card-icon" aria-hidden="true">💌</span>
+                        <h3 class="feature-card-title">Share</h3>
+                        <p class="feature-card-text">Send your digital Rakhi to your brother or sister.</p>
+                    </article>
+                </div>
+            </section>
+
+            <!-- ADDITIONAL FEATURES SECTION -->
+            <section id="additional-features" class="additional-features" aria-labelledby="additional-features-heading">
+                <h2 id="additional-features-heading">Everything You Need</h2>
+                <ul id="additional-features-list" class="feature-list" role="list">
+                    <li class="feature-list-item">
+                        <span class="feature-icon" aria-hidden="true">🎨</span>
+                        <span class="feature-text">Draw your own Rakhi</span>
+                    </li>
+                    <li class="feature-list-item">
+                        <span class="feature-icon" aria-hidden="true">💎</span>
+                        <span class="feature-text">Add decorative elements</span>
+                    </li>
+                    <li class="feature-list-item">
+                        <span class="feature-icon" aria-hidden="true">✍️</span>
+                        <span class="feature-text">Add names and messages</span>
+                    </li>
+                    <li class="feature-list-item">
+                        <span class="feature-icon" aria-hidden="true">🤖</span>
+                        <span class="feature-text">AI-powered Rakhi creation</span>
+                    </li>
+                    <li class="feature-list-item">
+                        <span class="feature-icon" aria-hidden="true">💾</span>
+                        <span class="feature-text">Save your designs</span>
+                    </li>
+                    <li class="feature-list-item">
+                        <span class="feature-icon" aria-hidden="true">💌</span>
+                        <span class="feature-text">Share with siblings</span>
+                    </li>
+                </ul>
+            </section>
+        </section>
+
+        <!-- ============================= -->
+        <!-- CREATE RAKHI SECTION -->
+        <!-- ============================= -->
+        <section id="page-create" class="page-section" data-page-id="create" aria-labelledby="create-heading">
+            <header class="page-header">
+                <h1 id="create-heading">Create Your Rakhi 🎨</h1>
+                <p id="create-subtitle" class="page-subtitle">Design your own Rakhi from scratch.</p>
+            </header>
+
+            <div id="rakhi-editor" class="rakhi-editor">
+
+                <div id="editor-toolbar" class="editor-toolbar" role="toolbar" aria-label="Rakhi editor tools">
+                    <div id="toolbar-tools" class="toolbar-group">
+                        <button type="button" id="tool-brush" class="tool-btn" data-tool="brush" aria-label="Brush tool">
+                            <span class="tool-icon" aria-hidden="true">🖌️</span>
+                            <span class="tool-label">Brush</span>
+                        </button>
+                        <button type="button" id="tool-eraser" class="tool-btn" data-tool="eraser" aria-label="Eraser tool">
+                            <span class="tool-icon" aria-hidden="true">🧽</span>
+                            <span class="tool-label">Eraser</span>
+                        </button>
+                        <button type="button" id="tool-colors" class="tool-btn" data-tool="colors" aria-label="Color picker">
+                            <span class="tool-icon" aria-hidden="true">🎨</span>
+                            <span class="tool-label">Colors</span>
+                        </button>
+                        <button type="button" id="tool-shapes" class="tool-btn" data-tool="shapes" aria-label="Shapes tool">
+                            <span class="tool-icon" aria-hidden="true">🔷</span>
+                            <span class="tool-label">Shapes</span>
+                        </button>
+                        <button type="button" id="tool-text" class="tool-btn" data-tool="text" aria-label="Add text tool">
+                            <span class="tool-icon" aria-hidden="true">🔤</span>
+                            <span class="tool-label">Text</span>
+                        </button>
+                        <button type="button" id="tool-rakhi-elements" class="tool-btn" data-tool="rakhi-elements" aria-label="Add decorative Rakhi elements">
+                            <span class="tool-icon" aria-hidden="true">🪢</span>
+                            <span class="tool-label">Rakhi Elements</span>
+                        </button>
+                    </div>
+
+                    <div id="toolbar-actions" class="toolbar-group">
+                        <button type="button" id="tool-undo" class="tool-btn" aria-label="Undo last action">
+                            <span class="tool-icon" aria-hidden="true">↩️</span>
+                            <span class="tool-label">Undo</span>
+                        </button>
+                        <button type="button" id="tool-redo" class="tool-btn" aria-label="Redo last action">
+                            <span class="tool-icon" aria-hidden="true">↪️</span>
+                            <span class="tool-label">Redo</span>
+                        </button>
+                        <button type="button" id="tool-clear" class="tool-btn" aria-label="Clear canvas">
+                            <span class="tool-icon" aria-hidden="true">🗑️</span>
+                            <span class="tool-label">Clear</span>
+                        </button>
+                    </div>
+
+                    <div id="toolbar-save-export" class="toolbar-group">
+                        <button type="button" id="tool-save" class="btn btn-primary" aria-label="Save Rakhi design">
+                            <span class="tool-icon" aria-hidden="true">💾</span>
+                            <span class="tool-label">Save</span>
+                        </button>
+                        <button type="button" id="tool-export" class="btn btn-secondary" aria-label="Export Rakhi design">
+                            <span class="tool-icon" aria-hidden="true">⬇️</span>
+                            <span class="tool-label">Export</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="editor-canvas-container" class="editor-canvas-container">
+                    <canvas id="rakhi-canvas" width="800" height="600" aria-label="Rakhi drawing canvas">
+                        Your browser does not support the canvas element.
+                    </canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================= -->
+        <!-- AI STUDIO SECTION -->
+        <!-- ============================= -->
+        <section id="page-ai-studio" class="page-section" data-page-id="ai-studio" aria-labelledby="ai-studio-heading">
+            <header class="page-header">
+                <h1 id="ai-studio-heading">Create with AI ✨</h1>
+                <p id="ai-studio-subtitle" class="page-subtitle">Describe the Rakhi you imagine and let AI create a design for you.</p>
+            </header>
+
+            <div id="ai-studio-content" class="ai-studio-content">
+
+                <form id="ai-prompt-form" class="ai-prompt-form">
+                    <label for="ai-prompt-input" class="ai-prompt-label">Describe your Rakhi</label>
+                    <textarea id="ai-prompt-input" class="ai-prompt-input" name="ai-prompt" rows="4"
+                        placeholder="e.g. A traditional red and gold Rakhi with a peacock motif"
+                        aria-describedby="ai-example-prompts"></textarea>
+
+                    <button type="submit" id="ai-generate-btn" class="btn btn-primary">
+                        ✨ Generate Design
+                    </button>
+                </form>
+
+                <div id="ai-example-prompts" class="ai-example-prompts" aria-label="Example prompts">
+                    <span class="ai-example-prompts-label">Try one of these:</span>
+                    <ul class="ai-example-list" role="list">
+                        <li>
+                            <button type="button" class="ai-example-btn" data-prompt="Create a traditional red and gold Rakhi.">
+                                Create a traditional red and gold Rakhi.
+                            </button>
+                        </li>
+                        <li>
+                            <button type="button" class="ai-example-btn" data-prompt="Create a floral Rakhi with pink flowers.">
+                                Create a floral Rakhi with pink flowers.
+                            </button>
+                        </li>
+                        <li>
+                            <button type="button" class="ai-example-btn" data-prompt="Create a modern Rakhi with blue and silver decorations.">
+                                Create a modern Rakhi with blue and silver decorations.
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div id="ai-loading-state" class="ai-loading-state" role="status" aria-live="polite" hidden>
+                    <span id="ai-loading-spinner" class="ai-loading-spinner" aria-hidden="true"></span>
+                    <p id="ai-loading-message">Generating your Rakhi design...</p>
+                </div>
+
+                <div id="ai-error-message" class="ai-error-message" role="alert" hidden>
+                    <p id="ai-error-text">Something went wrong while generating your design. Please try again.</p>
+                </div>
+
+                <div id="ai-generated-result" class="ai-generated-result" hidden>
+                    <h2 id="ai-generated-heading">Your AI-Generated Rakhi</h2>
+                    <div id="ai-generated-design-area" class="ai-generated-design-area">
+                        <img id="ai-generated-image" src="" alt="AI-generated Rakhi design" hidden>
+                    </div>
+                    <button type="button" id="ai-open-in-editor-btn" class="btn btn-secondary">
+                        Open in Editor
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ============================= -->
+        <!-- MY DESIGNS SECTION -->
+        <!-- ============================= -->
+        <section id="page-my-designs" class="page-section" data-page-id="my-designs" aria-labelledby="my-designs-heading">
+            <header class="page-header">
+                <h1 id="my-designs-heading">My Designs 💖</h1>
+                <p id="my-designs-subtitle" class="page-subtitle">Your saved Rakhis in one place.</p>
+            </header>
+
+            <div id="design-grid" class="design-grid" role="list" aria-live="polite">
+                <div id="design-grid-empty-state" class="design-grid-empty-state">
+                    <p id="design-grid-empty-message">No Rakhis yet. Start creating your first one!</p>
+                </div>
+                <!-- Saved design cards will be dynamically inserted here by JavaScript. -->
+                <!-- Example card template for reference (not rendered by default):
+                <article class="design-card" role="listitem" data-design-id="">
+                    <img class="design-card-thumbnail" src="" alt="">
+                    <h3 class="design-card-title"></h3>
+                    <div class="design-card-actions">
+                        <button type="button" class="design-open-btn">Open</button>
+                        <button type="button" class="design-edit-btn">Edit</button>
+                        <button type="button" class="design-delete-btn">Delete</button>
+                        <button type="button" class="design-share-btn">Share</button>
+                    </div>
+                </article>
+                -->
+            </div>
+        </section>
+
+        <!-- ============================= -->
+        <!-- SHARE SECTION -->
+        <!-- ============================= -->
+        <section id="page-share" class="page-section" data-page-id="share" aria-labelledby="share-heading">
+            <header class="page-header">
+                <h1 id="share-heading">Share Your Rakhi 💌</h1>
+                <p id="share-subtitle" class="page-subtitle">Send your creation to someone special.</p>
+            </header>
+
+            <div id="share-content" class="share-content">
+
+                <div id="share-preview" class="share-preview">
+                    <h2 id="share-preview-heading">Selected Rakhi</h2>
+                    <img id="share-preview-image" class="share-preview-image" src="" alt="Selected Rakhi design to share">
+                </div>
+
+                <div id="share-message-section" class="share-message-section">
+                    <label for="share-message-input" class="share-message-label">Personalized message</label>
+                    <textarea id="share-message-input" class="share-message-input" name="share-message" rows="3"
+                        placeholder="Happy Raksha Bandhan! ❤️"></textarea>
+                </div>
+
+                <div id="share-link-section" class="share-link-section">
+                    <label for="share-link-input" class="share-link-label">Share link</label>
+                    <div id="share-link-controls" class="share-link-controls">
+                        <input type="text" id="share-link-input" class="share-link-input" readonly
+                            placeholder="Your shareable link will appear here" aria-label="Shareable Rakhi link">
+                        <button type="button" id="copy-link-btn" class="btn btn-secondary">
+                            Copy Link
+                        </button>
+                    </div>
+                </div>
+
+                <div id="share-options" class="share-options">
+                    <button type="button" id="share-whatsapp-btn" class="btn share-option-btn" aria-label="Share via WhatsApp">
+                        <span class="share-icon" aria-hidden="true">🟢</span> WhatsApp
+                    </button>
+                    <button type="button" id="share-other-btn" class="btn share-option-btn" aria-label="More share options">
+                        <span class="share-icon" aria-hidden="true">🔗</span> Other Options
+                    </button>
+                    <button type="button" id="share-download-btn" class="btn share-option-btn" aria-label="Download Rakhi design">
+                        <span class="share-icon" aria-hidden="true">⬇️</span> Download
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============================= -->
+    <!-- FOOTER -->
+    <!-- ============================= -->
+    <footer id="site-footer" class="site-footer">
+        <div id="footer-content" class="footer-content">
+            <p id="footer-brand">Digital Rakhi ❤️</p>
+            <p id="footer-tagline">Made for every brother and sister.</p>
+            <p id="footer-motto">Create • Personalize • Share</p>
+            <p id="footer-copyright">&copy; <span id="footer-year">2026</span> Digital Rakhi. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
