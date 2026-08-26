@@ -1,58 +1,26 @@
 /* ==========================================================================
    DIGITAL RAKHI — script.js
+   ==========================================================================
 
-   Frontend responsibilities:
+   Features:
    - SPA navigation
-   - Rakhi canvas editor
-   - Save/load designs using localStorage
-   - Share/download functionality
-   - REAL AI image generation through Flask backend
-
-   AI FLOW:
-
-   User enters prompt
-          ↓
-   JavaScript
-          ↓
-   POST http://127.0.0.1:5000/generate
-          ↓
-   Flask app.py
-          ↓
-   ai_generator.py
-          ↓
-   AI provider
-          ↓
-   Generated image
-          ↓
-   Flask returns image_url
-          ↓
-   JavaScript displays image
-
-   IMPORTANT:
-   - No AI API key is stored in this file.
-   - The API key belongs only in the backend .env file.
+   - Canvas drawing
+   - Eraser
+   - Colors
+   - Shapes
+   - Text
+   - Rakhi Elements
+   - Undo / Redo
+   - Save / Load designs
+   - Export PNG
+   - AI Studio
+   - Share
    ========================================================================== */
 
 
 /* ==========================================================================
    1. BACKEND CONFIGURATION
    ========================================================================== */
-
-/*
- * Flask backend URL.
- *
- * Your current .env uses:
- *
- * FLASK_HOST=127.0.0.1
- * FLASK_PORT=5000
- *
- * Therefore the backend runs at:
- *
- * http://127.0.0.1:5000
- *
- * When you deploy the backend later, change this value to the deployed
- * backend URL.
- */
 
 const API_BASE_URL = 'http://127.0.0.1:5000';
 
@@ -63,120 +31,207 @@ const API_BASE_URL = 'http://127.0.0.1:5000';
 
 const dom = {
 
-    // Navigation
     navItems: null,
     sidebar: null,
 
-    // Transition overlay
     transitionOverlay: null,
     transitionRakhiImage: null,
 
-    // Page sections
     pageSections: null,
     mainContent: null,
 
-    // Home
     startDesigningBtn: null,
     aiCreateBtn: null,
 
-    // Create Rakhi / editor
     rakhiEditor: null,
     canvas: null,
+
     toolButtons: null,
+
     undoBtn: null,
     redoBtn: null,
     clearBtn: null,
     saveBtn: null,
     exportBtn: null,
 
-    // AI Studio
     aiPromptForm: null,
     aiPromptInput: null,
     aiGenerateBtn: null,
     aiExampleButtons: null,
+
     aiLoadingState: null,
     aiErrorMessage: null,
     aiErrorText: null,
+
     aiGeneratedResult: null,
     aiGeneratedImage: null,
     aiOpenInEditorBtn: null,
 
-    // My Designs
     designGrid: null,
     designGridEmptyState: null,
 
-    // Share
     sharePreviewImage: null,
     shareMessageInput: null,
     shareLinkInput: null,
+
     copyLinkBtn: null,
     shareWhatsappBtn: null,
     shareOtherBtn: null,
     shareDownloadBtn: null,
 
-    // Footer
-    footerYear: null,
+    footerYear: null
 };
 
 
 /* ==========================================================================
-   3. CACHE DOM REFERENCES
+   3. APPLICATION STATE
+   ========================================================================== */
+
+const STORAGE_KEY = 'digitalRakhi.designs';
+
+const MAX_HISTORY_STATES = 30;
+
+const state = {
+
+    currentPage: 'home',
+
+    isTransitioning: false,
+
+    /* Canvas */
+    ctx: null,
+
+    isDrawing: false,
+
+    currentTool: 'brush',
+
+    currentColor: '#C21E6D',
+
+    brushSize: 6,
+
+    lastPoint: null,
+
+    /* Shape */
+    selectedShape: null,
+
+    isShapeDrawing: false,
+
+    shapeStartPoint: null,
+
+    previewSnapshot: null,
+
+    /* Text */
+    textSize: 32,
+
+    /* Rakhi element */
+    selectedRakhiElement: null,
+
+    /* History */
+    history: [],
+
+    historyIndex: -1,
+
+    /* Saved designs */
+    designs: [],
+
+    selectedDesignId: null,
+
+    /* AI */
+    isGeneratingAI: false,
+
+    lastAIResultDataUrl: null
+};
+
+
+/* ==========================================================================
+   4. CACHE DOM
    ========================================================================== */
 
 function cacheDomReferences() {
 
-    // Navigation
-    dom.navItems = document.querySelectorAll('.nav-item');
-    dom.sidebar = document.getElementById('sidebar');
+    dom.navItems =
+        document.querySelectorAll('.nav-item');
 
-    // Transition
-    dom.transitionOverlay = document.getElementById('rakhi-transition');
-    dom.transitionRakhiImage = document.getElementById('transition-rakhi');
+    dom.sidebar =
+        document.getElementById('sidebar');
 
-    // Pages
-    dom.pageSections = document.querySelectorAll('.page-section');
-    dom.mainContent = document.getElementById('main-content');
+    dom.transitionOverlay =
+        document.getElementById('rakhi-transition');
 
-    // Home
-    dom.startDesigningBtn = document.getElementById('start-designing-btn');
-    dom.aiCreateBtn = document.getElementById('ai-create-btn');
+    dom.transitionRakhiImage =
+        document.getElementById('transition-rakhi');
 
-    // Editor
-    dom.rakhiEditor = document.getElementById('rakhi-editor');
-    dom.canvas = document.getElementById('rakhi-canvas');
+    dom.pageSections =
+        document.querySelectorAll('.page-section');
 
-    dom.toolButtons = document.querySelectorAll('.tool-btn[data-tool]');
+    dom.mainContent =
+        document.getElementById('main-content');
 
-    dom.undoBtn = document.getElementById('tool-undo');
-    dom.redoBtn = document.getElementById('tool-redo');
-    dom.clearBtn = document.getElementById('tool-clear');
-    dom.saveBtn = document.getElementById('tool-save');
-    dom.exportBtn = document.getElementById('tool-export');
+    dom.startDesigningBtn =
+        document.getElementById('start-designing-btn');
 
-    // AI
-    dom.aiPromptForm = document.getElementById('ai-prompt-form');
-    dom.aiPromptInput = document.getElementById('ai-prompt-input');
-    dom.aiGenerateBtn = document.getElementById('ai-generate-btn');
+    dom.aiCreateBtn =
+        document.getElementById('ai-create-btn');
 
-    dom.aiExampleButtons = document.querySelectorAll('.ai-example-btn');
+    dom.rakhiEditor =
+        document.getElementById('rakhi-editor');
 
-    dom.aiLoadingState = document.getElementById('ai-loading-state');
+    dom.canvas =
+        document.getElementById('rakhi-canvas');
 
-    dom.aiErrorMessage = document.getElementById('ai-error-message');
-    dom.aiErrorText = document.getElementById('ai-error-text');
+    dom.toolButtons =
+        document.querySelectorAll('.tool-btn[data-tool]');
 
-    dom.aiGeneratedResult = document.getElementById('ai-generated-result');
-    dom.aiGeneratedImage = document.getElementById('ai-generated-image');
+    dom.undoBtn =
+        document.getElementById('tool-undo');
+
+    dom.redoBtn =
+        document.getElementById('tool-redo');
+
+    dom.clearBtn =
+        document.getElementById('tool-clear');
+
+    dom.saveBtn =
+        document.getElementById('tool-save');
+
+    dom.exportBtn =
+        document.getElementById('tool-export');
+
+    dom.aiPromptForm =
+        document.getElementById('ai-prompt-form');
+
+    dom.aiPromptInput =
+        document.getElementById('ai-prompt-input');
+
+    dom.aiGenerateBtn =
+        document.getElementById('ai-generate-btn');
+
+    dom.aiExampleButtons =
+        document.querySelectorAll('.ai-example-btn');
+
+    dom.aiLoadingState =
+        document.getElementById('ai-loading-state');
+
+    dom.aiErrorMessage =
+        document.getElementById('ai-error-message');
+
+    dom.aiErrorText =
+        document.getElementById('ai-error-text');
+
+    dom.aiGeneratedResult =
+        document.getElementById('ai-generated-result');
+
+    dom.aiGeneratedImage =
+        document.getElementById('ai-generated-image');
 
     dom.aiOpenInEditorBtn =
         document.getElementById('ai-open-in-editor-btn');
 
-    // My designs
-    dom.designGrid = document.getElementById('design-grid');
+    dom.designGrid =
+        document.getElementById('design-grid');
+
     dom.designGridEmptyState =
         document.getElementById('design-grid-empty-state');
 
-    // Share
     dom.sharePreviewImage =
         document.getElementById('share-preview-image');
 
@@ -198,54 +253,9 @@ function cacheDomReferences() {
     dom.shareDownloadBtn =
         document.getElementById('share-download-btn');
 
-    // Footer
     dom.footerYear =
         document.getElementById('footer-year');
 }
-
-
-/* ==========================================================================
-   4. APPLICATION STATE
-   ========================================================================== */
-
-const STORAGE_KEY = 'digitalRakhi.designs';
-
-const MAX_HISTORY_STATES = 25;
-
-const state = {
-
-    currentPage: 'home',
-
-    isTransitioning: false,
-
-    // Canvas
-    ctx: null,
-
-    isDrawing: false,
-
-    currentTool: 'brush',
-
-    currentColor: '#C21E6D',
-
-    brushSize: 6,
-
-    lastPoint: null,
-
-    // Undo / redo
-    history: [],
-
-    historyIndex: -1,
-
-    // Saved designs
-    designs: [],
-
-    selectedDesignId: null,
-
-    // AI
-    isGeneratingAI: false,
-
-    lastAIResultDataUrl: null,
-};
 
 
 /* ==========================================================================
@@ -254,16 +264,17 @@ const state = {
 
 function setupNavigation() {
 
-    dom.navItems.forEach((navButton) => {
+    dom.navItems.forEach(button => {
 
-        navButton.addEventListener('click', (event) => {
+        button.addEventListener('click', event => {
 
             event.preventDefault();
 
-            const targetPage = navButton.dataset.page;
+            const page =
+                button.dataset.page;
 
-            if (targetPage) {
-                navigateToPage(targetPage);
+            if (page) {
+                navigateToPage(page);
             }
         });
     });
@@ -294,17 +305,13 @@ function navigateToPage(pageName) {
         return;
     }
 
-    const targetSection =
+    const target =
         document.querySelector(
             `.page-section[data-page-id="${pageName}"]`
         );
 
-    if (!targetSection) {
-
-        console.warn(
-            `Digital Rakhi: no page found for "${pageName}"`
-        );
-
+    if (!target) {
+        console.warn(`Page not found: ${pageName}`);
         return;
     }
 
@@ -312,9 +319,7 @@ function navigateToPage(pageName) {
 
     showRakhiTransition();
 
-    const TRANSITION_DELAY_MS = 900;
-
-    window.setTimeout(() => {
+    setTimeout(() => {
 
         showPage(pageName);
 
@@ -336,20 +341,17 @@ function navigateToPage(pageName) {
             });
         }
 
-    }, TRANSITION_DELAY_MS);
+    }, 900);
 }
 
 
 function showPage(pageName) {
 
-    dom.pageSections.forEach((section) => {
-
-        const isTarget =
-            section.dataset.pageId === pageName;
+    dom.pageSections.forEach(section => {
 
         section.classList.toggle(
             'active-page',
-            isTarget
+            section.dataset.pageId === pageName
         );
     });
 }
@@ -357,26 +359,26 @@ function showPage(pageName) {
 
 function setActiveNavItem(pageName) {
 
-    dom.navItems.forEach((navButton) => {
+    dom.navItems.forEach(button => {
 
-        const isActive =
-            navButton.dataset.page === pageName;
+        const active =
+            button.dataset.page === pageName;
 
-        navButton.classList.toggle(
+        button.classList.toggle(
             'active-nav-item',
-            isActive
+            active
         );
 
-        if (isActive) {
+        if (active) {
 
-            navButton.setAttribute(
+            button.setAttribute(
                 'aria-current',
                 'page'
             );
 
         } else {
 
-            navButton.removeAttribute(
+            button.removeAttribute(
                 'aria-current'
             );
         }
@@ -397,7 +399,7 @@ function runPageEnterHooks(pageName) {
 
 
 /* ==========================================================================
-   6. RAKHI TRANSITION
+   6. TRANSITION
    ========================================================================== */
 
 function showRakhiTransition() {
@@ -436,7 +438,7 @@ function hideRakhiTransition() {
         'true'
     );
 
-    window.setTimeout(() => {
+    setTimeout(() => {
 
         if (
             !dom.transitionOverlay.classList.contains(
@@ -455,7 +457,7 @@ function hideRakhiTransition() {
 
 
 /* ==========================================================================
-   7. CANVAS SETUP
+   7. CANVAS INITIALIZATION
    ========================================================================== */
 
 function initCanvas() {
@@ -463,7 +465,7 @@ function initCanvas() {
     if (!dom.canvas) {
 
         console.warn(
-            'Digital Rakhi: #rakhi-canvas not found.'
+            'Canvas #rakhi-canvas not found.'
         );
 
         return;
@@ -475,7 +477,7 @@ function initCanvas() {
     if (!state.ctx) {
 
         console.error(
-            'Digital Rakhi: unable to acquire 2D drawing context.'
+            'Could not create canvas context.'
         );
 
         return;
@@ -488,6 +490,14 @@ function initCanvas() {
     attachCanvasEventListeners();
 
     createBrushControlsPanel();
+
+    createShapePanel();
+
+    createTextPanel();
+
+    createRakhiElementsPanel();
+
+    selectDrawingTool('brush');
 }
 
 
@@ -499,7 +509,11 @@ function fillCanvasBackground(color) {
 
     state.ctx.save();
 
-    state.ctx.fillStyle = color;
+    state.ctx.globalCompositeOperation =
+        'source-over';
+
+    state.ctx.fillStyle =
+        color;
 
     state.ctx.fillRect(
         0,
@@ -511,6 +525,10 @@ function fillCanvasBackground(color) {
     state.ctx.restore();
 }
 
+
+/* ==========================================================================
+   8. CANVAS COORDINATES
+   ========================================================================== */
 
 function getCanvasCoordinates(event) {
 
@@ -531,36 +549,32 @@ function getCanvasCoordinates(event) {
 
         y:
             (event.clientY - rect.top) *
-            scaleY,
+            scaleY
     };
 }
 
 
 /* ==========================================================================
-   8. DRAWING
+   9. CANVAS EVENTS
    ========================================================================== */
 
 function attachCanvasEventListeners() {
 
     dom.canvas.addEventListener(
         'mousedown',
-        handleDrawStart
+        handlePointerDown
     );
 
     dom.canvas.addEventListener(
         'mousemove',
-        handleDrawMove
+        handlePointerMove
     );
 
     window.addEventListener(
         'mouseup',
-        handleDrawEnd
+        handlePointerUp
     );
 
-    dom.canvas.addEventListener(
-        'mouseleave',
-        handleDrawLeave
-    );
 
     dom.canvas.addEventListener(
         'touchstart',
@@ -576,49 +590,37 @@ function attachCanvasEventListeners() {
 
     window.addEventListener(
         'touchend',
-        handleDrawEnd
+        handlePointerUp
     );
 
     window.addEventListener(
         'touchcancel',
-        handleDrawEnd
+        handlePointerUp
     );
 }
 
 
-function handleDrawStart(event) {
+function handlePointerDown(event) {
 
-    beginStroke(
-        getCanvasCoordinates(event)
-    );
+    const point =
+        getCanvasCoordinates(event);
+
+    handleCanvasActionStart(point);
 }
 
 
-function handleDrawMove(event) {
+function handlePointerMove(event) {
 
-    if (!state.isDrawing) {
-        return;
-    }
+    const point =
+        getCanvasCoordinates(event);
 
-    continueStroke(
-        getCanvasCoordinates(event)
-    );
+    handleCanvasActionMove(point);
 }
 
 
-function handleDrawEnd() {
+function handlePointerUp() {
 
-    if (state.isDrawing) {
-        endStroke();
-    }
-}
-
-
-function handleDrawLeave() {
-
-    if (state.isDrawing) {
-        endStroke();
-    }
+    handleCanvasActionEnd();
 }
 
 
@@ -626,14 +628,16 @@ function handleTouchStart(event) {
 
     event.preventDefault();
 
-    const touch = event.touches[0];
+    const touch =
+        event.touches[0];
 
-    if (touch) {
-
-        beginStroke(
-            getCanvasCoordinates(touch)
-        );
+    if (!touch) {
+        return;
     }
+
+    handleCanvasActionStart(
+        getCanvasCoordinates(touch)
+    );
 }
 
 
@@ -641,20 +645,129 @@ function handleTouchMove(event) {
 
     event.preventDefault();
 
-    if (!state.isDrawing) {
+    const touch =
+        event.touches[0];
+
+    if (!touch) {
         return;
     }
 
-    const touch = event.touches[0];
+    handleCanvasActionMove(
+        getCanvasCoordinates(touch)
+    );
+}
 
-    if (touch) {
 
-        continueStroke(
-            getCanvasCoordinates(touch)
+function handleCanvasActionStart(point) {
+
+    /* Brush / eraser */
+
+    if (
+        state.currentTool === 'brush' ||
+        state.currentTool === 'eraser'
+    ) {
+
+        beginStroke(point);
+
+        return;
+    }
+
+
+    /* Shape */
+
+    if (
+        state.currentTool === 'shapes' &&
+        state.selectedShape
+    ) {
+
+        startShape(point);
+
+        return;
+    }
+
+
+    /* Text */
+
+    if (
+        state.currentTool === 'text'
+    ) {
+
+        placeText(point);
+
+        return;
+    }
+
+
+    /* Rakhi element */
+
+    if (
+        state.currentTool === 'rakhi-elements' &&
+        state.selectedRakhiElement
+    ) {
+
+        placeRakhiElement(
+            state.selectedRakhiElement,
+            point
         );
+
+        return;
     }
 }
 
+
+function handleCanvasActionMove(point) {
+
+    if (
+        state.currentTool === 'brush' ||
+        state.currentTool === 'eraser'
+    ) {
+
+        if (state.isDrawing) {
+            continueStroke(point);
+        }
+
+        return;
+    }
+
+
+    if (
+        state.currentTool === 'shapes' &&
+        state.isShapeDrawing
+    ) {
+
+        previewShape(point);
+    }
+}
+
+
+function handleCanvasActionEnd() {
+
+    if (
+        state.currentTool === 'brush' ||
+        state.currentTool === 'eraser'
+    ) {
+
+        endStroke();
+
+        return;
+    }
+
+
+    if (
+        state.currentTool === 'shapes' &&
+        state.isShapeDrawing
+    ) {
+
+        finishShape();
+
+        return;
+    }
+}
+
+
+/* ==========================================================================
+   10. BRUSH + ERASER
+   ========================================================================== */
 
 function beginStroke(point) {
 
@@ -666,14 +779,17 @@ function beginStroke(point) {
 
     state.lastPoint = point;
 
-    drawSegment(point, point);
+    drawSegment(
+        point,
+        point
+    );
 }
 
 
 function continueStroke(point) {
 
     if (
-        !state.ctx ||
+        !state.isDrawing ||
         !state.lastPoint
     ) {
         return;
@@ -690,6 +806,10 @@ function continueStroke(point) {
 
 function endStroke() {
 
+    if (!state.isDrawing) {
+        return;
+    }
+
     state.isDrawing = false;
 
     state.lastPoint = null;
@@ -700,17 +820,24 @@ function endStroke() {
 
 function drawSegment(from, to) {
 
-    const ctx = state.ctx;
+    const ctx =
+        state.ctx;
 
     ctx.save();
 
-    ctx.lineJoin = 'round';
+    ctx.lineJoin =
+        'round';
 
-    ctx.lineCap = 'round';
+    ctx.lineCap =
+        'round';
 
-    ctx.lineWidth = state.brushSize;
+    ctx.lineWidth =
+        state.brushSize;
 
-    if (state.currentTool === 'eraser') {
+
+    if (
+        state.currentTool === 'eraser'
+    ) {
 
         ctx.globalCompositeOperation =
             'destination-out';
@@ -726,6 +853,7 @@ function drawSegment(from, to) {
         ctx.strokeStyle =
             state.currentColor;
     }
+
 
     ctx.beginPath();
 
@@ -746,18 +874,19 @@ function drawSegment(from, to) {
 
 
 /* ==========================================================================
-   9. TOOLBAR
+   11. TOOLBAR
    ========================================================================== */
 
 function setupToolbar() {
 
-    dom.toolButtons.forEach((button) => {
+    dom.toolButtons.forEach(button => {
 
         button.addEventListener(
             'click',
             () => handleToolButtonClick(button)
         );
     });
+
 
     if (dom.undoBtn) {
         dom.undoBtn.addEventListener(
@@ -766,12 +895,14 @@ function setupToolbar() {
         );
     }
 
+
     if (dom.redoBtn) {
         dom.redoBtn.addEventListener(
             'click',
             redo
         );
     }
+
 
     if (dom.clearBtn) {
         dom.clearBtn.addEventListener(
@@ -780,12 +911,14 @@ function setupToolbar() {
         );
     }
 
+
     if (dom.saveBtn) {
         dom.saveBtn.addEventListener(
             'click',
             saveCurrentDesign
         );
     }
+
 
     if (dom.exportBtn) {
         dom.exportBtn.addEventListener(
@@ -798,7 +931,9 @@ function setupToolbar() {
 
 function handleToolButtonClick(button) {
 
-    const tool = button.dataset.tool;
+    const tool =
+        button.dataset.tool;
+
 
     if (
         tool === 'brush' ||
@@ -807,28 +942,69 @@ function handleToolButtonClick(button) {
 
         selectDrawingTool(tool);
 
+        hideAllEditorPanels();
+
         return;
     }
+
 
     if (tool === 'colors') {
 
-        toggleBrushControlsPanel();
+        selectDrawingTool('brush');
+
+        toggleEditorPanel(
+            'brush-controls-panel'
+        );
 
         return;
     }
 
-    showNotification(
-        'This tool is coming soon to the Rakhi editor!',
-        'info'
-    );
+
+    if (tool === 'shapes') {
+
+        selectDrawingTool('shapes');
+
+        toggleEditorPanel(
+            'shape-controls-panel'
+        );
+
+        return;
+    }
+
+
+    if (tool === 'text') {
+
+        selectDrawingTool('text');
+
+        toggleEditorPanel(
+            'text-controls-panel'
+        );
+
+        return;
+    }
+
+
+    if (tool === 'rakhi-elements') {
+
+        selectDrawingTool(
+            'rakhi-elements'
+        );
+
+        toggleEditorPanel(
+            'rakhi-elements-panel'
+        );
+
+        return;
+    }
 }
 
 
 function selectDrawingTool(tool) {
 
-    state.currentTool = tool;
+    state.currentTool =
+        tool;
 
-    dom.toolButtons.forEach((button) => {
+    dom.toolButtons.forEach(button => {
 
         button.classList.toggle(
             'active-tool',
@@ -837,6 +1013,55 @@ function selectDrawingTool(tool) {
     });
 }
 
+
+function hideAllEditorPanels() {
+
+    const panels = [
+
+        'brush-controls-panel',
+        'shape-controls-panel',
+        'text-controls-panel',
+        'rakhi-elements-panel'
+    ];
+
+    panels.forEach(id => {
+
+        const panel =
+            document.getElementById(id);
+
+        if (panel) {
+            panel.setAttribute(
+                'hidden',
+                ''
+            );
+        }
+    });
+}
+
+
+function toggleEditorPanel(id) {
+
+    const panel =
+        document.getElementById(id);
+
+    if (!panel) {
+        return;
+    }
+
+    const wasHidden =
+        panel.hasAttribute('hidden');
+
+    hideAllEditorPanels();
+
+    if (wasHidden) {
+        panel.removeAttribute('hidden');
+    }
+}
+
+
+/* ==========================================================================
+   12. COLORS
+   ========================================================================== */
 
 function createBrushControlsPanel() {
 
@@ -849,6 +1074,7 @@ function createBrushControlsPanel() {
         return;
     }
 
+
     const panel =
         document.createElement('div');
 
@@ -856,154 +1082,137 @@ function createBrushControlsPanel() {
         'brush-controls-panel';
 
     panel.className =
-        'toolbar-group';
+        'toolbar-group editor-control-panel';
 
     panel.setAttribute(
         'hidden',
         ''
     );
 
-    panel.setAttribute(
-        'aria-label',
-        'Brush color and size controls'
-    );
 
-    const swatchColors = [
+    const colors = [
+
         '#C21E6D',
         '#6B3FA0',
         '#FF7A30',
         '#D4A24C',
         '#E24B4B',
         '#2B1B2E',
+        '#FF4FA3',
+        '#FFD700',
+        '#2E86DE',
         '#FFFFFF'
     ];
 
-    swatchColors.forEach((color) => {
 
-        const swatchBtn =
+    colors.forEach(color => {
+
+        const button =
             document.createElement('button');
 
-        swatchBtn.type =
+        button.type =
             'button';
 
-        swatchBtn.className =
+        button.className =
             'color-swatch-btn';
 
-        swatchBtn.style.background =
+        button.style.background =
             color;
 
-        swatchBtn.setAttribute(
-            'aria-label',
-            `Set brush color to ${color}`
-        );
+        button.title =
+            color;
 
-        swatchBtn.addEventListener(
+        button.addEventListener(
             'click',
             () => setCurrentColor(color)
         );
 
         panel.appendChild(
-            swatchBtn
+            button
         );
     });
 
-    const customColorInput =
+
+    const customColor =
         document.createElement('input');
 
-    customColorInput.type =
+    customColor.type =
         'color';
 
-    customColorInput.id =
-        'custom-color-input';
-
-    customColorInput.value =
+    customColor.value =
         state.currentColor;
 
-    customColorInput.addEventListener(
+    customColor.title =
+        'Custom color';
+
+    customColor.addEventListener(
         'input',
-        (event) =>
+        event =>
             setCurrentColor(
                 event.target.value
             )
     );
 
+
     panel.appendChild(
-        customColorInput
+        customColor
     );
 
-    const brushSizeLabel =
+
+    const sizeLabel =
         document.createElement('label');
 
-    brushSizeLabel.setAttribute(
-        'for',
-        'brush-size-input'
-    );
+    sizeLabel.textContent =
+        'Brush Size';
 
-    brushSizeLabel.textContent =
-        'Size';
-
-    brushSizeLabel.className =
+    sizeLabel.className =
         'tool-label';
 
-    panel.appendChild(
-        brushSizeLabel
-    );
 
-    const brushSizeInput =
+    const sizeInput =
         document.createElement('input');
 
-    brushSizeInput.type =
+    sizeInput.type =
         'range';
 
-    brushSizeInput.id =
-        'brush-size-input';
+    sizeInput.min =
+        '2';
 
-    brushSizeInput.min = '2';
+    sizeInput.max =
+        '50';
 
-    brushSizeInput.max = '40';
+    sizeInput.value =
+        state.brushSize;
 
-    brushSizeInput.value =
-        String(state.brushSize);
 
-    brushSizeInput.addEventListener(
+    sizeInput.addEventListener(
         'input',
-        (event) =>
+        event =>
             setBrushSize(
                 Number(event.target.value)
             )
     );
 
+
     panel.appendChild(
-        brushSizeInput
+        sizeLabel
     );
 
-    dom.rakhiEditor.insertBefore(
-        panel,
-        dom.rakhiEditor.lastElementChild
+    panel.appendChild(
+        sizeInput
     );
-}
 
 
-function toggleBrushControlsPanel() {
-
-    const panel =
-        document.getElementById(
-            'brush-controls-panel'
-        );
-
-    if (!panel) {
-        return;
-    }
-
-    panel.toggleAttribute(
-        'hidden'
+    dom.rakhiEditor.appendChild(
+        panel
     );
 }
 
 
 function setCurrentColor(color) {
 
-    state.currentColor = color;
+    state.currentColor =
+        color;
 
     selectDrawingTool('brush');
 }
@@ -1013,16 +1222,1318 @@ function setBrushSize(size) {
 
     if (
         Number.isFinite(size) &&
-        size > 0
+        size >= 1
     ) {
 
-        state.brushSize = size;
+        state.brushSize =
+            size;
     }
 }
 
 
 /* ==========================================================================
-   10. UNDO / REDO
+   13. SHAPES
+   ========================================================================== */
+
+function createShapePanel() {
+
+    if (
+        !dom.rakhiEditor ||
+        document.getElementById(
+            'shape-controls-panel'
+        )
+    ) {
+        return;
+    }
+
+
+    const panel =
+        document.createElement('div');
+
+    panel.id =
+        'shape-controls-panel';
+
+    panel.className =
+        'toolbar-group editor-control-panel';
+
+    panel.setAttribute(
+        'hidden',
+        ''
+    );
+
+
+    const title =
+        document.createElement('span');
+
+    title.className =
+        'tool-label';
+
+    title.textContent =
+        'Choose Shape';
+
+
+    panel.appendChild(
+        title
+    );
+
+
+    const shapes = [
+
+        ['circle', '⭕ Circle'],
+        ['rectangle', '▭ Rectangle'],
+        ['triangle', '△ Triangle'],
+        ['diamond', '◇ Diamond'],
+        ['star', '⭐ Star']
+    ];
+
+
+    shapes.forEach(([type, label]) => {
+
+        const button =
+            document.createElement('button');
+
+        button.type =
+            'button';
+
+        button.className =
+            'shape-option-btn';
+
+        button.textContent =
+            label;
+
+        button.addEventListener(
+            'click',
+            () => {
+
+                state.selectedShape =
+                    type;
+
+                selectDrawingTool(
+                    'shapes'
+                );
+
+                panel
+                    .querySelectorAll(
+                        '.shape-option-btn'
+                    )
+                    .forEach(btn =>
+                        btn.classList.remove(
+                            'selected-option'
+                        )
+                    );
+
+                button.classList.add(
+                    'selected-option'
+                );
+
+                showNotification(
+                    `${label} selected. Draw it on the canvas.`,
+                    'info'
+                );
+            }
+        );
+
+        panel.appendChild(
+            button
+        );
+    });
+
+
+    dom.rakhiEditor.appendChild(
+        panel
+    );
+}
+
+
+function startShape(point) {
+
+    if (!state.selectedShape) {
+
+        showNotification(
+            'Choose a shape first.',
+            'info'
+        );
+
+        return;
+    }
+
+
+    state.isShapeDrawing =
+        true;
+
+    state.shapeStartPoint =
+        point;
+
+    state.previewSnapshot =
+        dom.canvas.toDataURL(
+            'image/png'
+        );
+}
+
+
+function previewShape(point) {
+
+    if (
+        !state.previewSnapshot ||
+        !state.shapeStartPoint
+    ) {
+        return;
+    }
+
+
+    restoreCanvasPreview(
+        state.previewSnapshot,
+        () => {
+
+            drawShape(
+                state.selectedShape,
+                state.shapeStartPoint,
+                point,
+                true
+            );
+        }
+    );
+}
+
+
+function finishShape() {
+
+    if (
+        !state.isShapeDrawing ||
+        !state.shapeStartPoint
+    ) {
+        return;
+    }
+
+
+    const start =
+        state.shapeStartPoint;
+
+
+    state.isShapeDrawing =
+        false;
+
+
+    state.shapeStartPoint =
+        null;
+
+
+    state.previewSnapshot =
+        null;
+
+
+    /*
+     * The final shape was already previewed.
+     * Save it to history.
+     */
+
+    saveHistoryState();
+}
+
+
+function restoreCanvasPreview(
+    dataUrl,
+    callback
+) {
+
+    const image =
+        new Image();
+
+
+    image.onload = () => {
+
+        state.ctx.clearRect(
+            0,
+            0,
+            dom.canvas.width,
+            dom.canvas.height
+        );
+
+
+        state.ctx.drawImage(
+            image,
+            0,
+            0,
+            dom.canvas.width,
+            dom.canvas.height
+        );
+
+
+        if (callback) {
+            callback();
+        }
+    };
+
+
+    image.src =
+        dataUrl;
+}
+
+
+function drawShape(
+    type,
+    start,
+    end,
+    preview = false
+) {
+
+    const ctx =
+        state.ctx;
+
+
+    const x =
+        Math.min(start.x, end.x);
+
+    const y =
+        Math.min(start.y, end.y);
+
+    const width =
+        Math.abs(end.x - start.x);
+
+    const height =
+        Math.abs(end.y - start.y);
+
+    const centerX =
+        x + width / 2;
+
+    const centerY =
+        y + height / 2;
+
+
+    ctx.save();
+
+    ctx.fillStyle =
+        state.currentColor;
+
+    ctx.strokeStyle =
+        state.currentColor;
+
+    ctx.lineWidth =
+        state.brushSize;
+
+
+    ctx.beginPath();
+
+
+    if (type === 'circle') {
+
+        const radius =
+            Math.min(width, height) / 2;
+
+        ctx.arc(
+            centerX,
+            centerY,
+            radius,
+            0,
+            Math.PI * 2
+        );
+
+    } else if (type === 'rectangle') {
+
+        ctx.rect(
+            x,
+            y,
+            width,
+            height
+        );
+
+    } else if (type === 'triangle') {
+
+        ctx.moveTo(
+            centerX,
+            y
+        );
+
+        ctx.lineTo(
+            x + width,
+            y + height
+        );
+
+        ctx.lineTo(
+            x,
+            y + height
+        );
+
+        ctx.closePath();
+
+    } else if (type === 'diamond') {
+
+        ctx.moveTo(
+            centerX,
+            y
+        );
+
+        ctx.lineTo(
+            x + width,
+            centerY
+        );
+
+        ctx.lineTo(
+            centerX,
+            y + height
+        );
+
+        ctx.lineTo(
+            x,
+            centerY
+        );
+
+        ctx.closePath();
+
+    } else if (type === 'star') {
+
+        drawStarPath(
+            ctx,
+            centerX,
+            centerY,
+            Math.min(width, height) / 2,
+            Math.min(width, height) / 4,
+            5
+        );
+    }
+
+
+    ctx.fill();
+
+    ctx.restore();
+}
+
+
+function drawStarPath(
+    ctx,
+    centerX,
+    centerY,
+    outerRadius,
+    innerRadius,
+    points
+) {
+
+    const step =
+        Math.PI / points;
+
+    let rotation =
+        -Math.PI / 2;
+
+
+    ctx.moveTo(
+        centerX +
+        Math.cos(rotation) *
+        outerRadius,
+
+        centerY +
+        Math.sin(rotation) *
+        outerRadius
+    );
+
+
+    for (
+        let i = 0;
+        i < points * 2;
+        i++
+    ) {
+
+        const radius =
+            i % 2 === 0
+                ? outerRadius
+                : innerRadius;
+
+        rotation += step;
+
+
+        ctx.lineTo(
+            centerX +
+            Math.cos(rotation) *
+            radius,
+
+            centerY +
+            Math.sin(rotation) *
+            radius
+        );
+    }
+
+
+    ctx.closePath();
+}
+
+
+/* ==========================================================================
+   14. TEXT
+   ========================================================================== */
+
+function createTextPanel() {
+
+    if (
+        !dom.rakhiEditor ||
+        document.getElementById(
+            'text-controls-panel'
+        )
+    ) {
+        return;
+    }
+
+
+    const panel =
+        document.createElement('div');
+
+    panel.id =
+        'text-controls-panel';
+
+    panel.className =
+        'toolbar-group editor-control-panel';
+
+    panel.setAttribute(
+        'hidden',
+        ''
+    );
+
+
+    const label =
+        document.createElement('span');
+
+    label.className =
+        'tool-label';
+
+    label.textContent =
+        'Text size';
+
+
+    const sizeInput =
+        document.createElement('input');
+
+    sizeInput.type =
+        'range';
+
+    sizeInput.min =
+        '12';
+
+    sizeInput.max =
+        '80';
+
+    sizeInput.value =
+        state.textSize;
+
+
+    sizeInput.addEventListener(
+        'input',
+        event => {
+
+            state.textSize =
+                Number(event.target.value);
+        }
+    );
+
+
+    panel.appendChild(
+        label
+    );
+
+    panel.appendChild(
+        sizeInput
+    );
+
+
+    const instruction =
+        document.createElement('span');
+
+    instruction.className =
+        'tool-label';
+
+    instruction.textContent =
+        'Click the canvas to add text.';
+
+
+    panel.appendChild(
+        instruction
+    );
+
+
+    dom.rakhiEditor.appendChild(
+        panel
+    );
+}
+
+
+function placeText(point) {
+
+    const text =
+        window.prompt(
+            'Enter your Rakhi text:'
+        );
+
+
+    if (
+        text === null ||
+        !text.trim()
+    ) {
+        return;
+    }
+
+
+    const ctx =
+        state.ctx;
+
+
+    ctx.save();
+
+    ctx.fillStyle =
+        state.currentColor;
+
+    ctx.font =
+        `bold ${state.textSize}px Arial`;
+
+    ctx.textAlign =
+        'center';
+
+    ctx.textBaseline =
+        'middle';
+
+
+    ctx.fillText(
+        text.trim(),
+        point.x,
+        point.y
+    );
+
+
+    ctx.restore();
+
+
+    saveHistoryState();
+
+
+    showNotification(
+        'Text added to your Rakhi.',
+        'success'
+    );
+}
+
+
+/* ==========================================================================
+   15. RAKHI ELEMENTS
+   ========================================================================== */
+
+function createRakhiElementsPanel() {
+
+    if (
+        !dom.rakhiEditor ||
+        document.getElementById(
+            'rakhi-elements-panel'
+        )
+    ) {
+        return;
+    }
+
+
+    const panel =
+        document.createElement('div');
+
+    panel.id =
+        'rakhi-elements-panel';
+
+    panel.className =
+        'toolbar-group editor-control-panel';
+
+    panel.setAttribute(
+        'hidden',
+        ''
+    );
+
+
+    const title =
+        document.createElement('span');
+
+    title.className =
+        'tool-label';
+
+    title.textContent =
+        'Rakhi Elements';
+
+
+    panel.appendChild(
+        title
+    );
+
+
+    const elements = [
+
+        ['center', '🟡 Center'],
+        ['bead', '🔴 Bead'],
+        ['flower', '🌸 Flower'],
+        ['diamond', '💎 Diamond'],
+        ['star', '⭐ Star'],
+        ['ring', '⭕ Ring'],
+        ['thread', '🧵 Thread'],
+        ['decoration', '✨ Decoration']
+    ];
+
+
+    elements.forEach(
+        ([type, label]) => {
+
+            const button =
+                document.createElement(
+                    'button'
+                );
+
+            button.type =
+                'button';
+
+            button.className =
+                'rakhi-element-btn';
+
+            button.textContent =
+                label;
+
+            button.addEventListener(
+                'click',
+                () => {
+
+                    state.selectedRakhiElement =
+                        type;
+
+                    selectDrawingTool(
+                        'rakhi-elements'
+                    );
+
+
+                    panel
+                        .querySelectorAll(
+                            '.rakhi-element-btn'
+                        )
+                        .forEach(btn =>
+                            btn.classList.remove(
+                                'selected-option'
+                            )
+                        );
+
+
+                    button.classList.add(
+                        'selected-option'
+                    );
+
+
+                    showNotification(
+                        `${label} selected. Click the canvas to place it.`,
+                        'info'
+                    );
+                }
+            );
+
+
+            panel.appendChild(
+                button
+            );
+        }
+    );
+
+
+    dom.rakhiEditor.appendChild(
+        panel
+    );
+}
+
+
+function placeRakhiElement(
+    element,
+    point
+) {
+
+    switch (element) {
+
+        case 'center':
+            drawRakhiCenter(
+                point.x,
+                point.y
+            );
+            break;
+
+
+        case 'bead':
+            drawBead(
+                point.x,
+                point.y
+            );
+            break;
+
+
+        case 'flower':
+            drawFlower(
+                point.x,
+                point.y
+            );
+            break;
+
+
+        case 'diamond':
+            drawRakhiDiamond(
+                point.x,
+                point.y
+            );
+            break;
+
+
+        case 'star':
+            drawRakhiStar(
+                point.x,
+                point.y
+            );
+            break;
+
+
+        case 'ring':
+            drawRakhiRing(
+                point.x,
+                point.y
+            );
+            break;
+
+
+        case 'thread':
+            drawThread(
+                point.x,
+                point.y
+            );
+            break;
+
+
+        case 'decoration':
+            drawDecoration(
+                point.x,
+                point.y
+            );
+            break;
+    }
+
+
+    saveHistoryState();
+
+
+    showNotification(
+        'Rakhi element added.',
+        'success'
+    );
+}
+
+
+/* ==========================================================================
+   16. RAKHI ELEMENT DRAWING
+   ========================================================================== */
+
+function drawRakhiCenter(x, y) {
+
+    const ctx =
+        state.ctx;
+
+    ctx.save();
+
+
+    /* Outer gold ring */
+
+    ctx.fillStyle =
+        '#D4A24C';
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x,
+        y,
+        55,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    /* Pink ring */
+
+    ctx.fillStyle =
+        '#C21E6D';
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x,
+        y,
+        43,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    /* Gold inner ring */
+
+    ctx.fillStyle =
+        '#FFD700';
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x,
+        y,
+        30,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    /* Center */
+
+    ctx.fillStyle =
+        '#6B3FA0';
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x,
+        y,
+        18,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    /* Highlight */
+
+    ctx.fillStyle =
+        '#FFFFFF';
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x - 6,
+        y - 6,
+        5,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    ctx.restore();
+}
+
+
+function drawBead(x, y) {
+
+    const ctx =
+        state.ctx;
+
+    ctx.save();
+
+
+    ctx.fillStyle =
+        state.currentColor;
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x,
+        y,
+        13,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    ctx.strokeStyle =
+        '#D4A24C';
+
+    ctx.lineWidth =
+        3;
+
+    ctx.stroke();
+
+
+    ctx.fillStyle =
+        '#FFFFFF';
+
+    ctx.globalAlpha =
+        0.7;
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x - 4,
+        y - 4,
+        3,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    ctx.restore();
+}
+
+
+function drawFlower(x, y) {
+
+    const ctx =
+        state.ctx;
+
+    ctx.save();
+
+
+    const petalColors = [
+
+        '#FF4FA3',
+        '#FF7A30',
+        '#C21E6D',
+        '#6B3FA0'
+    ];
+
+
+    for (
+        let i = 0;
+        i < 8;
+        i++
+    ) {
+
+        const angle =
+            (Math.PI * 2 / 8) * i;
+
+
+        const px =
+            x + Math.cos(angle) * 25;
+
+        const py =
+            y + Math.sin(angle) * 25;
+
+
+        ctx.fillStyle =
+            petalColors[
+                i % petalColors.length
+            ];
+
+
+        ctx.beginPath();
+
+        ctx.arc(
+            px,
+            py,
+            18,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+    }
+
+
+    ctx.fillStyle =
+        '#FFD700';
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x,
+        y,
+        18,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    ctx.restore();
+}
+
+
+function drawRakhiDiamond(x, y) {
+
+    const ctx =
+        state.ctx;
+
+    ctx.save();
+
+
+    ctx.fillStyle =
+        '#D4A24C';
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        x,
+        y - 30
+    );
+
+    ctx.lineTo(
+        x + 30,
+        y
+    );
+
+    ctx.lineTo(
+        x,
+        y + 30
+    );
+
+    ctx.lineTo(
+        x - 30,
+        y
+    );
+
+    ctx.closePath();
+
+    ctx.fill();
+
+
+    ctx.fillStyle =
+        '#C21E6D';
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        x,
+        y - 18
+    );
+
+    ctx.lineTo(
+        x + 18,
+        y
+    );
+
+    ctx.lineTo(
+        x,
+        y + 18
+    );
+
+    ctx.lineTo(
+        x - 18,
+        y
+    );
+
+    ctx.closePath();
+
+    ctx.fill();
+
+
+    ctx.restore();
+}
+
+
+function drawRakhiStar(x, y) {
+
+    const ctx =
+        state.ctx;
+
+    ctx.save();
+
+    ctx.fillStyle =
+        '#FFD700';
+
+    ctx.beginPath();
+
+    drawStarPath(
+        ctx,
+        x,
+        y,
+        32,
+        14,
+        5
+    );
+
+    ctx.fill();
+
+    ctx.restore();
+}
+
+
+function drawRakhiRing(x, y) {
+
+    const ctx =
+        state.ctx;
+
+    ctx.save();
+
+    ctx.strokeStyle =
+        '#D4A24C';
+
+    ctx.lineWidth =
+        10;
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x,
+        y,
+        30,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.stroke();
+
+
+    ctx.strokeStyle =
+        '#C21E6D';
+
+    ctx.lineWidth =
+        4;
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x,
+        y,
+        30,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.stroke();
+
+
+    ctx.restore();
+}
+
+
+function drawThread(x, y) {
+
+    const ctx =
+        state.ctx;
+
+    ctx.save();
+
+    ctx.strokeStyle =
+        '#C21E6D';
+
+    ctx.lineWidth =
+        7;
+
+    ctx.lineCap =
+        'round';
+
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        x - 100,
+        y
+    );
+
+
+    ctx.bezierCurveTo(
+        x - 50,
+        y - 25,
+        x + 50,
+        y + 25,
+        x + 100,
+        y
+    );
+
+
+    ctx.stroke();
+
+
+    ctx.strokeStyle =
+        '#FF4FA3';
+
+    ctx.lineWidth =
+        3;
+
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        x - 100,
+        y
+    );
+
+
+    ctx.bezierCurveTo(
+        x - 50,
+        y + 25,
+        x + 50,
+        y - 25,
+        x + 100,
+        y
+    );
+
+
+    ctx.stroke();
+
+
+    ctx.restore();
+}
+
+
+function drawDecoration(x, y) {
+
+    const ctx =
+        state.ctx;
+
+    ctx.save();
+
+
+    const colors = [
+
+        '#FFD700',
+        '#C21E6D',
+        '#6B3FA0',
+        '#FF7A30'
+    ];
+
+
+    for (
+        let i = 0;
+        i < 12;
+        i++
+    ) {
+
+        const angle =
+            (Math.PI * 2 / 12) * i;
+
+
+        const radius =
+            42;
+
+
+        const px =
+            x + Math.cos(angle) * radius;
+
+
+        const py =
+            y + Math.sin(angle) * radius;
+
+
+        ctx.fillStyle =
+            colors[
+                i % colors.length
+            ];
+
+
+        ctx.beginPath();
+
+        ctx.arc(
+            px,
+            py,
+            6,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+    }
+
+
+    ctx.restore();
+}
+
+
+/* ==========================================================================
+   17. UNDO / REDO
    ========================================================================== */
 
 function saveHistoryState() {
@@ -1031,10 +2542,12 @@ function saveHistoryState() {
         return;
     }
 
+
     const snapshot =
         dom.canvas.toDataURL(
             'image/png'
         );
+
 
     state.history =
         state.history.slice(
@@ -1042,9 +2555,11 @@ function saveHistoryState() {
             state.historyIndex + 1
         );
 
+
     state.history.push(
         snapshot
     );
+
 
     if (
         state.history.length >
@@ -1054,21 +2569,22 @@ function saveHistoryState() {
         state.history.shift();
     }
 
+
     state.historyIndex =
         state.history.length - 1;
 }
 
 
-function restoreCanvasFromSnapshot(dataUrl) {
+function restoreCanvasFromSnapshot(
+    dataUrl,
+    callback
+) {
 
     const image =
         new Image();
 
-    image.onload = () => {
 
-        if (!state.ctx) {
-            return;
-        }
+    image.onload = () => {
 
         state.ctx.clearRect(
             0,
@@ -1077,6 +2593,7 @@ function restoreCanvasFromSnapshot(dataUrl) {
             dom.canvas.height
         );
 
+
         state.ctx.drawImage(
             image,
             0,
@@ -1084,23 +2601,33 @@ function restoreCanvasFromSnapshot(dataUrl) {
             dom.canvas.width,
             dom.canvas.height
         );
+
+
+        if (callback) {
+            callback();
+        }
     };
+
 
     image.onerror = () => {
 
         showNotification(
-            'Could not restore that step of your drawing.',
+            'Could not restore the drawing.',
             'error'
         );
     };
 
-    image.src = dataUrl;
+
+    image.src =
+        dataUrl;
 }
 
 
 function undo() {
 
-    if (state.historyIndex <= 0) {
+    if (
+        state.historyIndex <= 0
+    ) {
 
         showNotification(
             'Nothing to undo yet.',
@@ -1110,7 +2637,9 @@ function undo() {
         return;
     }
 
-    state.historyIndex -= 1;
+
+    state.historyIndex--;
+
 
     restoreCanvasFromSnapshot(
         state.history[
@@ -1135,7 +2664,9 @@ function redo() {
         return;
     }
 
-    state.historyIndex += 1;
+
+    state.historyIndex++;
+
 
     restoreCanvasFromSnapshot(
         state.history[
@@ -1152,15 +2683,19 @@ function clearCanvasWithConfirmation() {
             'Clear the entire canvas?'
         );
 
+
     if (!confirmed) {
         return;
     }
+
 
     fillCanvasBackground(
         '#FFFDF9'
     );
 
+
     saveHistoryState();
+
 
     showNotification(
         'Canvas cleared.',
@@ -1170,7 +2705,7 @@ function clearCanvasWithConfirmation() {
 
 
 /* ==========================================================================
-   11. SAVE / LOAD DESIGNS
+   18. SAVE DESIGNS
    ========================================================================== */
 
 function loadDesignsFromStorage() {
@@ -1178,29 +2713,29 @@ function loadDesignsFromStorage() {
     try {
 
         const raw =
-            window.localStorage.getItem(
+            localStorage.getItem(
                 STORAGE_KEY
             );
+
 
         state.designs =
             raw
                 ? JSON.parse(raw)
                 : [];
 
+
     } catch (error) {
 
-        console.error(
-            'Digital Rakhi: failed to load saved designs.',
-            error
-        );
+        console.error(error);
 
         state.designs = [];
 
         showNotification(
-            'Could not load your saved designs.',
+            'Could not load saved designs.',
             'error'
         );
     }
+
 
     return state.designs;
 }
@@ -1210,26 +2745,25 @@ function persistDesignsToStorage() {
 
     try {
 
-        window.localStorage.setItem(
+        localStorage.setItem(
             STORAGE_KEY,
             JSON.stringify(
                 state.designs
             )
         );
 
+
         return true;
 
     } catch (error) {
 
-        console.error(
-            'Digital Rakhi: failed to save designs.',
-            error
-        );
+        console.error(error);
 
         showNotification(
-            'Could not save your design. Storage may be full.',
+            'Could not save the design. Storage may be full.',
             'error'
         );
+
 
         return false;
     }
@@ -1239,20 +2773,16 @@ function persistDesignsToStorage() {
 function saveCurrentDesign() {
 
     if (!dom.canvas) {
-
-        showNotification(
-            'No canvas available to save.',
-            'error'
-        );
-
         return;
     }
+
 
     try {
 
         const design = {
 
-            id: generateId(),
+            id:
+                generateId(),
 
             name:
                 `My Rakhi ${state.designs.length + 1}`,
@@ -1263,12 +2793,14 @@ function saveCurrentDesign() {
             image:
                 dom.canvas.toDataURL(
                     'image/png'
-                ),
+                )
         };
+
 
         state.designs.unshift(
             design
         );
+
 
         if (
             persistDesignsToStorage()
@@ -1280,15 +2812,13 @@ function saveCurrentDesign() {
             );
         }
 
+
     } catch (error) {
 
-        console.error(
-            'Digital Rakhi: error while saving design.',
-            error
-        );
+        console.error(error);
 
         showNotification(
-            'Something went wrong while saving your design.',
+            'Could not save your design.',
             'error'
         );
     }
@@ -1296,7 +2826,7 @@ function saveCurrentDesign() {
 
 
 /* ==========================================================================
-   12. MY DESIGNS
+   19. MY DESIGNS
    ========================================================================== */
 
 function renderDesignGrid() {
@@ -1305,19 +2835,22 @@ function renderDesignGrid() {
         return;
     }
 
+
     loadDesignsFromStorage();
 
-    const existingCards =
-        dom.designGrid.querySelectorAll(
+
+    dom.designGrid
+        .querySelectorAll(
             '.design-card'
+        )
+        .forEach(card =>
+            card.remove()
         );
 
-    existingCards.forEach(
-        (card) => card.remove()
-    );
 
     const hasDesigns =
         state.designs.length > 0;
+
 
     if (dom.designGridEmptyState) {
 
@@ -1325,27 +2858,28 @@ function renderDesignGrid() {
             hasDesigns;
     }
 
+
     if (!hasDesigns) {
         return;
     }
 
-    state.designs.forEach(
-        (design) => {
 
-            const card =
-                createDesignCardElement(
-                    design
-                );
+    state.designs.forEach(
+        design => {
 
             dom.designGrid.appendChild(
-                card
+                createDesignCardElement(
+                    design
+                )
             );
         }
     );
 }
 
 
-function createDesignCardElement(design) {
+function createDesignCardElement(
+    design
+) {
 
     const card =
         document.createElement(
@@ -1358,25 +2892,20 @@ function createDesignCardElement(design) {
     card.dataset.designId =
         design.id;
 
-    card.setAttribute(
-        'role',
-        'listitem'
-    );
 
-
-    const thumbnail =
+    const image =
         document.createElement(
             'img'
         );
 
-    thumbnail.className =
+    image.className =
         'design-card-thumbnail';
 
-    thumbnail.src =
+    image.src =
         design.image;
 
-    thumbnail.alt =
-        `Preview of ${design.name}`;
+    image.alt =
+        design.name;
 
 
     const title =
@@ -1391,15 +2920,15 @@ function createDesignCardElement(design) {
         design.name;
 
 
-    const dateLabel =
+    const date =
         document.createElement(
             'p'
         );
 
-    dateLabel.className =
+    date.className =
         'design-card-date';
 
-    dateLabel.textContent =
+    date.textContent =
         formatDate(
             design.date
         );
@@ -1414,199 +2943,177 @@ function createDesignCardElement(design) {
         'design-card-actions';
 
 
-    const openBtn =
-        document.createElement(
-            'button'
+    const open =
+        createDesignActionButton(
+            'Open',
+            () =>
+                openDesignInEditor(
+                    design.id
+                )
         );
 
-    openBtn.type =
-        'button';
 
-    openBtn.className =
-        'design-open-btn';
-
-    openBtn.textContent =
-        'Open';
-
-    openBtn.addEventListener(
-        'click',
-        () =>
-            openDesignInEditor(
-                design.id
-            )
-    );
-
-
-    const editBtn =
-        document.createElement(
-            'button'
+    const edit =
+        createDesignActionButton(
+            'Edit',
+            () =>
+                openDesignInEditor(
+                    design.id
+                )
         );
 
-    editBtn.type =
-        'button';
 
-    editBtn.className =
-        'design-edit-btn';
-
-    editBtn.textContent =
-        'Edit';
-
-    editBtn.addEventListener(
-        'click',
-        () =>
-            openDesignInEditor(
-                design.id
-            )
-    );
-
-
-    const deleteBtn =
-        document.createElement(
-            'button'
+    const deleteButton =
+        createDesignActionButton(
+            'Delete',
+            () =>
+                deleteDesign(
+                    design.id
+                )
         );
 
-    deleteBtn.type =
-        'button';
 
-    deleteBtn.className =
-        'design-delete-btn';
+    const share =
+        createDesignActionButton(
+            'Share',
+            () => {
 
-    deleteBtn.textContent =
-        'Delete';
+                state.selectedDesignId =
+                    design.id;
 
-    deleteBtn.addEventListener(
-        'click',
-        () =>
-            deleteDesign(
-                design.id
-            )
-    );
-
-
-    const shareBtn =
-        document.createElement(
-            'button'
+                navigateToPage(
+                    'share'
+                );
+            }
         );
-
-    shareBtn.type =
-        'button';
-
-    shareBtn.className =
-        'design-share-btn';
-
-    shareBtn.textContent =
-        'Share';
-
-    shareBtn.addEventListener(
-        'click',
-        () => {
-
-            state.selectedDesignId =
-                design.id;
-
-            navigateToPage(
-                'share'
-            );
-        }
-    );
 
 
     actions.append(
-        openBtn,
-        editBtn,
-        deleteBtn,
-        shareBtn
+        open,
+        edit,
+        deleteButton,
+        share
     );
 
+
     card.append(
-        thumbnail,
+        image,
         title,
-        dateLabel,
+        date,
         actions
     );
+
 
     return card;
 }
 
 
-function deleteDesign(designId) {
+function createDesignActionButton(
+    text,
+    handler
+) {
 
-    const confirmed =
-        window.confirm(
-            'Delete this Rakhi design?'
+    const button =
+        document.createElement(
+            'button'
         );
 
-    if (!confirmed) {
+    button.type =
+        'button';
+
+    button.textContent =
+        text;
+
+    button.addEventListener(
+        'click',
+        handler
+    );
+
+
+    return button;
+}
+
+
+function deleteDesign(id) {
+
+    if (
+        !window.confirm(
+            'Delete this Rakhi design?'
+        )
+    ) {
         return;
     }
 
+
     state.designs =
         state.designs.filter(
-            (design) =>
-                design.id !== designId
+            design =>
+                design.id !== id
         );
+
 
     if (
         persistDesignsToStorage()
     ) {
 
+        renderDesignGrid();
+
         showNotification(
             'Design deleted.',
             'info'
         );
-
-        renderDesignGrid();
     }
 }
 
 
-function openDesignInEditor(designId) {
+function openDesignInEditor(id) {
+
+    loadDesignsFromStorage();
+
 
     const design =
         state.designs.find(
-            (item) =>
-                item.id === designId
+            item =>
+                item.id === id
         );
+
 
     if (!design) {
 
         showNotification(
-            'That design could not be found.',
+            'Design not found.',
             'error'
         );
 
         return;
     }
 
+
     state.selectedDesignId =
-        designId;
+        id;
+
 
     navigateToPage(
         'create'
     );
 
-    window.setTimeout(
-        () => {
 
-            restoreCanvasFromSnapshot(
-                design.image
-            );
+    setTimeout(() => {
 
-            saveHistoryState();
+        restoreCanvasFromSnapshot(
+            design.image
+        );
 
-        },
-        950
-    );
+
+        saveHistoryState();
+
+    }, 950);
 }
 
 
 /* ==========================================================================
-   13. REAL AI STUDIO
+   20. AI STUDIO
    ========================================================================== */
-
-/*
- * Connects the AI Studio form to the Flask backend.
- */
 
 function setupAIStudio() {
 
@@ -1620,7 +3127,7 @@ function setupAIStudio() {
 
 
     dom.aiExampleButtons.forEach(
-        (button) => {
+        button => {
 
             button.addEventListener(
                 'click',
@@ -1650,15 +3157,12 @@ function setupAIStudio() {
 }
 
 
-/*
- * Called when the user clicks:
- *
- * Generate Design
- */
-
-async function handleAIGenerateSubmit(event) {
+async function handleAIGenerateSubmit(
+    event
+) {
 
     event.preventDefault();
+
 
     const prompt =
         dom.aiPromptInput
@@ -1666,18 +3170,16 @@ async function handleAIGenerateSubmit(event) {
             : '';
 
 
-    // Validate prompt
     if (!prompt) {
 
         showAIError(
-            'Please describe the Rakhi you would like AI to create.'
+            'Please describe the Rakhi you want AI to create.'
         );
 
         return;
     }
 
 
-    // Prevent duplicate requests
     if (state.isGeneratingAI) {
         return;
     }
@@ -1692,34 +3194,24 @@ async function handleAIGenerateSubmit(event) {
 
     try {
 
-        /*
-         * Send the prompt to Flask.
-         */
-        const resultImageUrl =
+        const imageUrl =
             await generateAIRakhi(
                 prompt
             );
 
 
-        /*
-         * Display the generated image.
-         */
         showAIResult(
-            resultImageUrl
+            imageUrl
         );
 
 
     } catch (error) {
 
-        console.error(
-            'Digital Rakhi: AI generation failed.',
-            error
-        );
-
+        console.error(error);
 
         showAIError(
             error.message ||
-            'We could not generate a design right now. Please try again.'
+            'Could not generate the Rakhi.'
         );
 
 
@@ -1730,25 +3222,10 @@ async function handleAIGenerateSubmit(event) {
 }
 
 
-/*
- * REAL BACKEND REQUEST
- *
- * Frontend
- *    ↓
- * POST /generate
- *    ↓
- * Flask app.py
- *    ↓
- * ai_generator.py
- *    ↓
- * AI provider
- *    ↓
- * image_url
- */
-
 async function generateAIRakhi(prompt) {
 
-    state.isGeneratingAI = true;
+    state.isGeneratingAI =
+        true;
 
 
     try {
@@ -1761,60 +3238,53 @@ async function generateAIRakhi(prompt) {
 
                     headers: {
                         'Content-Type':
-                            'application/json',
+                            'application/json'
                     },
 
-                    body: JSON.stringify({
-                        prompt: prompt,
-                    }),
+                    body:
+                        JSON.stringify({
+                            prompt
+                        })
                 }
             );
 
 
-        /*
-         * Try to read JSON regardless of HTTP status.
-         */
         let data;
+
 
         try {
 
             data =
                 await response.json();
 
-        } catch (jsonError) {
+        } catch {
 
             throw new Error(
-                'The backend returned an invalid response.'
+                'Backend returned an invalid response.'
             );
         }
 
 
-        /*
-         * Backend returned an error.
-         */
-        if (!response.ok || !data.success) {
+        if (
+            !response.ok ||
+            !data.success
+        ) {
 
             throw new Error(
                 data.error ||
-                `Image generation failed (${response.status}).`
+                `Generation failed (${response.status}).`
             );
         }
 
 
-        /*
-         * Make sure image_url exists.
-         */
         if (!data.image_url) {
 
             throw new Error(
-                'The backend did not return an image URL.'
+                'Backend did not return an image URL.'
             );
         }
 
 
-        /*
-         * Return image URL to showAIResult().
-         */
         return normalizeImageUrl(
             data.image_url
         );
@@ -1822,97 +3292,79 @@ async function generateAIRakhi(prompt) {
 
     } finally {
 
-        state.isGeneratingAI = false;
+        state.isGeneratingAI =
+            false;
     }
 }
 
 
-/*
- * Converts backend image paths into browser-usable URLs.
- *
- * Examples:
- *
- * Backend returns:
- *
- * /static/generated/rakhi.png
- *
- * Result:
- *
- * http://127.0.0.1:5000/static/generated/rakhi.png
- *
- *
- * If backend already returns:
- *
- * http://127.0.0.1:5000/...
- *
- * it is left unchanged.
- */
-
-function normalizeImageUrl(imageUrl) {
+function normalizeImageUrl(
+    imageUrl
+) {
 
     if (!imageUrl) {
         return '';
     }
 
 
-    /*
-     * Already a complete URL.
-     */
     if (
-        imageUrl.startsWith('http://') ||
-        imageUrl.startsWith('https://') ||
-        imageUrl.startsWith('data:')
+        imageUrl.startsWith(
+            'http://'
+        ) ||
+        imageUrl.startsWith(
+            'https://'
+        ) ||
+        imageUrl.startsWith(
+            'data:'
+        )
     ) {
 
         return imageUrl;
     }
 
 
-    /*
-     * Backend returned a root-relative path.
-     */
-    if (imageUrl.startsWith('/')) {
+    if (
+        imageUrl.startsWith('/')
+    ) {
 
-        return `${API_BASE_URL}${imageUrl}`;
+        return (
+            `${API_BASE_URL}${imageUrl}`
+        );
     }
 
 
-    /*
-     * Backend returned something like:
-     *
-     * static/generated/image.png
-     *
-     * or:
-     *
-     * generated/image.png
-     */
-
-    return `${API_BASE_URL}/${imageUrl}`;
+    return (
+        `${API_BASE_URL}/${imageUrl}`
+    );
 }
 
 
 /* ==========================================================================
-   14. AI UI STATE
+   21. AI UI
    ========================================================================== */
 
-function setAILoadingState(isLoading) {
+function setAILoadingState(
+    loading
+) {
 
     if (dom.aiLoadingState) {
 
         dom.aiLoadingState.hidden =
-            !isLoading;
+            !loading;
     }
+
 
     if (dom.aiGenerateBtn) {
 
         dom.aiGenerateBtn.disabled =
-            isLoading;
+            loading;
     }
+
 
     if (dom.aiPromptInput) {
 
         dom.aiPromptInput.disabled =
-            isLoading;
+            loading;
     }
 }
 
@@ -1924,6 +3376,7 @@ function showAIError(message) {
         dom.aiErrorText.textContent =
             message;
     }
+
 
     if (dom.aiErrorMessage) {
 
@@ -1977,10 +3430,6 @@ function hideAIResult() {
 }
 
 
-/* ==========================================================================
-   15. OPEN AI RESULT IN EDITOR
-   ========================================================================== */
-
 function openAIResultInEditor() {
 
     if (!state.lastAIResultDataUrl) {
@@ -1999,65 +3448,57 @@ function openAIResultInEditor() {
     );
 
 
-    window.setTimeout(
-        () => {
+    setTimeout(() => {
 
-            const image =
-                new Image();
-
-
-            image.crossOrigin =
-                'anonymous';
+        const image =
+            new Image();
 
 
-            image.onload = () => {
-
-                if (!state.ctx) {
-                    return;
-                }
+        image.crossOrigin =
+            'anonymous';
 
 
-                state.ctx.clearRect(
-                    0,
-                    0,
-                    dom.canvas.width,
-                    dom.canvas.height
-                );
+        image.onload = () => {
+
+            state.ctx.clearRect(
+                0,
+                0,
+                dom.canvas.width,
+                dom.canvas.height
+            );
 
 
-                state.ctx.drawImage(
-                    image,
-                    0,
-                    0,
-                    dom.canvas.width,
-                    dom.canvas.height
-                );
+            state.ctx.drawImage(
+                image,
+                0,
+                0,
+                dom.canvas.width,
+                dom.canvas.height
+            );
 
 
-                saveHistoryState();
-            };
+            saveHistoryState();
+        };
 
 
-            image.onerror = () => {
+        image.onerror = () => {
 
-                showNotification(
-                    'Could not load the AI-generated image into the editor.',
-                    'error'
-                );
-            };
+            showNotification(
+                'Could not load AI image into editor.',
+                'error'
+            );
+        };
 
 
-            image.src =
-                state.lastAIResultDataUrl;
+        image.src =
+            state.lastAIResultDataUrl;
 
-        },
-        950
-    );
+    }, 950);
 }
 
 
 /* ==========================================================================
-   16. SHARING
+   22. SHARE
    ========================================================================== */
 
 function setupSharePage() {
@@ -2101,21 +3542,22 @@ function setupSharePage() {
 
 function prepareSharePageForSelectedDesign() {
 
-    let imageSource = null;
+    let imageSource =
+        null;
 
 
-    const selectedDesign =
+    const design =
         state.designs.find(
-            (design) =>
-                design.id ===
+            item =>
+                item.id ===
                 state.selectedDesignId
         );
 
 
-    if (selectedDesign) {
+    if (design) {
 
         imageSource =
-            selectedDesign.image;
+            design.image;
 
     } else if (dom.canvas) {
 
@@ -2141,12 +3583,13 @@ function prepareSharePageForSelectedDesign() {
 
     if (dom.shareLinkInput) {
 
-        const shareId =
+        const id =
             state.selectedDesignId ||
             generateId();
 
+
         dom.shareLinkInput.value =
-            `https://digitalrakhi.app/r/${shareId}`;
+            `https://digitalrakhi.app/r/${id}`;
     }
 
 
@@ -2172,7 +3615,7 @@ async function copyShareLink() {
     if (!link) {
 
         showNotification(
-            'There is no share link to copy yet.',
+            'No share link available.',
             'error'
         );
 
@@ -2207,15 +3650,10 @@ async function copyShareLink() {
         );
 
 
-    } catch (error) {
-
-        console.error(
-            'Digital Rakhi: clipboard copy failed.',
-            error
-        );
+    } catch {
 
         showNotification(
-            'Could not copy the link. Please copy it manually.',
+            'Could not copy the link.',
             'error'
         );
     }
@@ -2242,12 +3680,8 @@ function shareViaWhatsApp() {
         );
 
 
-    const whatsappUrl =
-        `https://wa.me/?text=${text}`;
-
-
     window.open(
-        whatsappUrl,
+        `https://wa.me/?text=${text}`,
         '_blank',
         'noopener,noreferrer'
     );
@@ -2281,18 +3715,13 @@ async function shareViaWebShareOrCopy() {
                     message,
 
                 url:
-                    link,
+                    link
             });
+
 
             return;
 
-        } catch (error) {
-
-            console.info(
-                'Digital Rakhi: native share dismissed or failed.',
-                error
-            );
-
+        } catch {
             return;
         }
     }
@@ -2303,7 +3732,7 @@ async function shareViaWebShareOrCopy() {
 
 
 /* ==========================================================================
-   17. DOWNLOAD
+   23. DOWNLOAD
    ========================================================================== */
 
 function downloadCanvasAsPng() {
@@ -2311,7 +3740,7 @@ function downloadCanvasAsPng() {
     if (!dom.canvas) {
 
         showNotification(
-            'No canvas available to export.',
+            'No canvas available.',
             'error'
         );
 
@@ -2327,29 +3756,29 @@ function downloadCanvasAsPng() {
             );
 
 
-        const downloadLink =
-            document.createElement('a');
+        const link =
+            document.createElement(
+                'a'
+            );
 
 
-        downloadLink.href =
+        link.href =
             dataUrl;
 
 
-        downloadLink.download =
+        link.download =
             'my-digital-rakhi.png';
 
 
         document.body.appendChild(
-            downloadLink
+            link
         );
 
 
-        downloadLink.click();
+        link.click();
 
 
-        document.body.removeChild(
-            downloadLink
-        );
+        link.remove();
 
 
         showNotification(
@@ -2360,14 +3789,10 @@ function downloadCanvasAsPng() {
 
     } catch (error) {
 
-        console.error(
-            'Digital Rakhi: failed to export canvas as PNG.',
-            error
-        );
-
+        console.error(error);
 
         showNotification(
-            'Could not export your design.',
+            'Could not export the design.',
             'error'
         );
     }
@@ -2375,7 +3800,7 @@ function downloadCanvasAsPng() {
 
 
 /* ==========================================================================
-   18. NOTIFICATIONS
+   24. NOTIFICATIONS
    ========================================================================== */
 
 const NOTIFICATION_CONTAINER_ID =
@@ -2400,18 +3825,22 @@ function getOrCreateNotificationContainer() {
                 'div'
             );
 
+
         container.id =
             NOTIFICATION_CONTAINER_ID;
+
 
         container.setAttribute(
             'aria-live',
             'polite'
         );
 
+
         container.setAttribute(
             'role',
             'status'
         );
+
 
         document.body.appendChild(
             container
@@ -2451,42 +3880,39 @@ function showNotification(
     );
 
 
-    window.setTimeout(
-        () => {
+    setTimeout(() => {
 
-            toast.classList.add(
-                'notification-hide'
-            );
+        toast.classList.add(
+            'notification-hide'
+        );
 
 
-            window.setTimeout(
-                () => toast.remove(),
-                300
-            );
+        setTimeout(
+            () => toast.remove(),
+            300
+        );
 
-        },
-        NOTIFICATION_DURATION_MS
-    );
+    }, NOTIFICATION_DURATION_MS);
 }
 
 
 /* ==========================================================================
-   19. KEYBOARD SHORTCUTS
+   25. KEYBOARD SHORTCUTS
    ========================================================================== */
 
 function setupKeyboardShortcuts() {
 
     document.addEventListener(
         'keydown',
-        (event) => {
+        event => {
 
-            const isModifierPressed =
+            const modifier =
                 event.ctrlKey ||
                 event.metaKey;
 
 
             if (
-                isModifierPressed &&
+                modifier &&
                 !event.shiftKey &&
                 event.key.toLowerCase() === 'z'
             ) {
@@ -2500,7 +3926,7 @@ function setupKeyboardShortcuts() {
 
 
             if (
-                isModifierPressed &&
+                modifier &&
                 event.shiftKey &&
                 event.key.toLowerCase() === 'z'
             ) {
@@ -2514,14 +3940,20 @@ function setupKeyboardShortcuts() {
 
 
             if (
-                event.key === 'Escape' &&
-                state.isTransitioning
+                event.key === 'Escape'
             ) {
 
-                hideRakhiTransition();
+                hideAllEditorPanels();
 
-                state.isTransitioning =
-                    false;
+                if (
+                    state.isTransitioning
+                ) {
+
+                    hideRakhiTransition();
+
+                    state.isTransitioning =
+                        false;
+                }
             }
         }
     );
@@ -2529,7 +3961,7 @@ function setupKeyboardShortcuts() {
 
 
 /* ==========================================================================
-   20. UTILITIES
+   26. UTILITIES
    ========================================================================== */
 
 function generateId() {
@@ -2543,7 +3975,9 @@ function generateId() {
 }
 
 
-function formatDate(isoDateString) {
+function formatDate(
+    isoDateString
+) {
 
     try {
 
@@ -2556,13 +3990,18 @@ function formatDate(isoDateString) {
         return date.toLocaleDateString(
             undefined,
             {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
+                year:
+                    'numeric',
+
+                month:
+                    'short',
+
+                day:
+                    'numeric'
             }
         );
 
-    } catch (error) {
+    } catch {
 
         return '';
     }
@@ -2574,15 +4013,14 @@ function setFooterYear() {
     if (dom.footerYear) {
 
         dom.footerYear.textContent =
-            String(
-                new Date().getFullYear()
-            );
+            new Date()
+                .getFullYear();
     }
 }
 
 
 /* ==========================================================================
-   21. INITIALIZATION
+   27. INITIALIZATION
    ========================================================================== */
 
 function initializeApp() {
@@ -2608,9 +4046,6 @@ function initializeApp() {
         setFooterYear();
 
 
-        /*
-         * Start on Home.
-         */
         showPage('home');
 
         setActiveNavItem('home');
@@ -2620,6 +4055,7 @@ function initializeApp() {
             'Digital Rakhi frontend initialized.'
         );
 
+
         console.log(
             `AI backend: ${API_BASE_URL}`
         );
@@ -2628,7 +4064,7 @@ function initializeApp() {
     } catch (error) {
 
         console.error(
-            'Digital Rakhi: failed to initialize application.',
+            'Digital Rakhi initialization failed:',
             error
         );
     }
