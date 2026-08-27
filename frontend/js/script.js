@@ -20,7 +20,7 @@
    1. BACKEND CONFIGURATION
    ========================================================================== */
 
-const API_BASE_URL = 'http://127.0.0.1:5000';
+const API_BASE_URL = '';
 const DESIGNS_STORAGE_KEY = 'digitalRakhi.designs';
 const MAX_HISTORY_STATES = 25;
 
