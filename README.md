@@ -10,7 +10,7 @@ Digital Rakhi lets you draw your own rakhi from scratch, describe one and have A
 
 ## 🌐 Live Demo
 
-[🔗 Try Digital Rakhi Live](YOUR_DEMO_LINK_HERE)
+[🔗 Try Digital Rakhi Live](https://digital-rakhi-9pc2.onrender.com)
 
 Open the demo and create your own Rakhi ❤️
 
